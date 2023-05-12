@@ -2,7 +2,6 @@
 # @Author  : tk
 # @FileName: train.py
 import logging
-
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
 from deep_training.nlp.models.lora.v2 import LoraArguments, LoraConfig
@@ -103,8 +102,7 @@ if __name__ == '__main__':
 
 
     dataHelper = NN_DataHelper(model_args, training_args, data_args)
-    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
-    # config.torch_dtype = "float16"
+    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs={"torch_dtype": "float16"})
 
 
     if "llama" in model_args.model_name_or_path.lower() and tokenizer.bos_token_id != DEFAULT_BOS_TOKEN:
@@ -132,7 +130,8 @@ if __name__ == '__main__':
     if data_args.do_test:
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
-    pl_model = MyRewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args)
+    pl_model = MyRewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
+                                   load_in_8bit=load_in_8bit,device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto")
     # if not load_in_8bit:
     #     pl_model.half()
 
@@ -143,7 +142,8 @@ if __name__ == '__main__':
         # if os.path.exists(ckpt_path):
         #     if  lora_args is None:
         #         # 加载权重继续训练
-        #         pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,strict=False)
+        #         pl_model = MyRewardTransformer.load_from_checkpoint(ckpt_path, config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,
+        #                                                             load_in_8bit=load_in_8bit,device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",strict=False)
         #     else:
         #         # 加载lora权重 继续训练  0.0.20版本支持lora 继续训练
         #         pl_model.backbone.from_pretrained(pl_model.backbone.model, pretrained_model_name_or_path=ckpt_path,lora_config=lora_args,is_trainable=True,strict=False)
