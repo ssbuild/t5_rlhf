@@ -1,22 +1,13 @@
 
 ## 安装
-    pip install --pre -U deep_training>=0.1.5
+    pip install -U deep_training>=0.1.5
     python >= 3.10
 
 
 ## 更新详情
 - [deep_training](https://github.com/ssbuild/deep_training)
 
-## 深度学习常规任务例子
 
-- [pytorch-task-example](https://github.com/ssbuild/pytorch-task-example)
-- [tf-task-example](https://github.com/ssbuild/tf-task-example)
-- [chatglm_finetuning](https://github.com/ssbuild/chatglm_finetuning)
-- [chatyuan_finetuning](https://github.com/ssbuild/chatyuan_finetuning)
-- [llm_finetuning](https://github.com/ssbuild/llm_finetuning)
-- [rlhf_llm](https://github.com/ssbuild/rlhf_llm)
-- [rlhf_chatglm](https://github.com/ssbuild/rlhf_chatglm)
-- [rlhf_chatyuan](https://github.com/ssbuild/rlhf_chatyuan)
 
 
 
@@ -37,6 +28,17 @@
 }
 ```
 
+
+## 友情链接
+
+- [pytorch-task-example](https://github.com/ssbuild/pytorch-task-example)
+- [tf-task-example](https://github.com/ssbuild/tf-task-example)
+- [chatglm_finetuning](https://github.com/ssbuild/chatglm_finetuning)
+- [chatyuan_finetuning](https://github.com/ssbuild/chatyuan_finetuning)
+- [llm_finetuning](https://github.com/ssbuild/llm_finetuning)
+- [rlhf_llm](https://github.com/ssbuild/rlhf_llm)
+- [rlhf_chatglm](https://github.com/ssbuild/rlhf_chatglm)
+- [rlhf_chatyuan](https://github.com/ssbuild/rlhf_chatyuan)
 
 ## 
     纯粹而干净的代码
