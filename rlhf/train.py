@@ -102,51 +102,53 @@ if __name__ == '__main__':
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
 
+    if trainer.global_rank == 0:
+        pl_reward_model = load_reward_model('../reward/best_ckpt')
+        reward_device = torch.cuda.device_count() - 1
+        pl_reward_model = pl_reward_model.to(reward_device)
+        delta_reward = True
 
-    pl_reward_model = load_reward_model('../reward/best_ckpt')
-    reward_device = torch.cuda.device_count() - 1
-    pl_reward_model = pl_reward_model.to(reward_device)
-    delta_reward = True
+        def get_reward(input_data,output_data):
+            inputs = tokenizer(
+                input_data,
+                padding=True,
+                truncation=True,
+                max_length=data_args.max_seq_length,
+                return_attention_mask=False,
+                return_tensors="pt",
+            ).to(reward_device)
 
-    def get_reward(input_data,output_data):
-        inputs = tokenizer(
-            input_data,
-            padding=True,
-            truncation=True,
-            max_length=data_args.max_seq_length,
-            return_attention_mask=False,
-            return_tensors="pt",
-        ).to(reward_device)
-
-        outputs = tokenizer(
-            output_data,
-            padding=True,
-            truncation=True,
-            max_length=data_args.max_seq_length,
-            return_attention_mask=False,
-            return_tensors="pt",
-        ).to(reward_device)
+            outputs = tokenizer(
+                output_data,
+                padding=True,
+                truncation=True,
+                max_length=data_args.max_seq_length,
+                return_attention_mask=False,
+                return_tensors="pt",
+            ).to(reward_device)
 
 
-        out = []
-        for i in range(len(inputs)):
-            batch_ixs = slice(i * 1, (i + 1) * 1)
-            input_ids = inputs.input_ids[batch_ixs]
-            decoder_input_ids = outputs.input_ids[batch_ixs]
-            rewards = pl_reward_model.forward_returns(**{
-                "input_ids": input_ids,"decoder_input_ids": decoder_input_ids,
-            })
-            out.extend(rewards)
-        return torch.hstack(out)
+            out = []
+            for i in range(len(inputs)):
+                batch_ixs = slice(i * 1, (i + 1) * 1)
+                input_ids = inputs.input_ids[batch_ixs]
+                decoder_input_ids = outputs.input_ids[batch_ixs]
+                rewards = pl_reward_model.forward_returns(**{
+                    "input_ids": input_ids,"decoder_input_ids": decoder_input_ids,
+                })
+                out.extend(rewards)
+            return torch.hstack(out)
 
-    def reward_fn(prompts,outputs, org_labels, **kwargs):
-        org_labels = [str(l, encoding='utf-8') for l in org_labels]
-        rewards = get_reward(prompts,outputs)
-        if not delta_reward:
-            return rewards
+        def reward_fn(prompts,outputs, org_labels, **kwargs):
+            org_labels = [str(l, encoding='utf-8') for l in org_labels]
+            rewards = get_reward(prompts,outputs)
+            if not delta_reward:
+                return rewards
 
-        original_rewards = get_reward(prompts, org_labels)
-        return rewards - original_rewards
+            original_rewards = get_reward(prompts, org_labels)
+            return rewards - original_rewards
+    else:
+        reward_fn = None
 
 
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
