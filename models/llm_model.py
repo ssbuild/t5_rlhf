@@ -81,7 +81,7 @@ class MyRewardModel(TransformerForSeq2SeqLM):
             setattr(self.model, 'is_parallelizable', True)
             self.model.enable_input_require_grads()
 
-    def forward_reward(self,**batch):
+    def forward_value(self,**batch):
         back_module = self.model.lm_head
         self.model.lm_head = self.score
         state = self(**batch)[0]
@@ -129,7 +129,7 @@ class MyRewardModel(TransformerForSeq2SeqLM):
         rejected_mean_scores = torch.stack(rejected_mean_scores)
         return loss,chosen_mean_scores,rejected_mean_scores
 
-    def forward_value(self,input_ids,values):
+    def forward_score(self,input_ids,values):
         bs = values.size(0)
         seq_len = input_ids.shape[1]
         chosen_mean_scores = [
@@ -145,7 +145,7 @@ class MyRewardModel(TransformerForSeq2SeqLM):
 
     def forward_returns(self, **inputs):
         input_ids = inputs['decoder_input_ids']
-        rewards = self.forward_reward(**inputs)
+        rewards = self.forward_value(**inputs)
         ends = torch.argmax((input_ids == self.config.eos_token_id).float(), dim=1).view(-1, 1)
         returns = torch.gather(rewards, 1, ends).squeeze(-1)
         return returns
@@ -156,9 +156,9 @@ class MyRewardModel(TransformerForSeq2SeqLM):
             i, k = (input_b, k[:-1]) if k.endswith('2') else (input_a, k)
             i[k] = v
 
-        value_a = self.forward_reward(**input_a)
+        value_a = self.forward_value(**input_a)
         if len(input_b) > 0:
-            value_b = self.forward_reward(**input_b)
+            value_b = self.forward_value(**input_b)
             loss, chosen_mean_scores, rejected_mean_scores = self.forward_loss(input_a["decoder_input_ids"], value_a,
                                                                                input_b["decoder_input_ids"], value_b)
             loss_dict = {
@@ -170,10 +170,10 @@ class MyRewardModel(TransformerForSeq2SeqLM):
                 return (loss_dict,)
             return (loss, value_a, value_b)
 
-        values, chosen_mean_scores = self.forward_value(batch["decoder_input_ids"], value_a)
         if return_value_only:
-            return (values,)
-        return (values, chosen_mean_scores)
+            return (value_a,)
+        scores = self.forward_score(batch["decoder_input_ids"], value_a)
+        return (value_a, scores)
 
 
 
