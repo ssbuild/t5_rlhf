@@ -18,13 +18,20 @@ from models import MyPPOTransformer, LoraArguments, LoraConfig, PPOArguments, PP
     load_ref_model
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 
+deepspeed_config = get_deepspeed_config()
 class MySimpleModelCheckpoint(SimpleModelCheckpointFabric):
     def __init__(self, *args, **kwargs):
         super(MySimpleModelCheckpoint, self).__init__(*args, **kwargs)
         lora_args:LoraConfig= self.external_kwargs['lora_args']
-        if lora_args is not None:
+        if deepspeed_config is not None:
+            self.weight_file = './best_ckpt/last.ckpt'
+            self.last_weight_file = './last_ckpt/last.ckpt'
+        elif lora_args is not None:
             self.weight_file = './best_ckpt'
             self.last_weight_file = './last_ckpt'
+        else:
+            self.weight_file = './best_ckpt/best.pt'
+            self.last_weight_file = './last_ckpt/best.pt'
 
     def on_save_model(
             self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
@@ -45,8 +52,6 @@ if __name__ == '__main__':
     model_args, training_args, data_args, lora_args, ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ppo_args = ppo_args.config
-
-    deepspeed_config = get_deepspeed_config()
 
     checkpoint_callback = MySimpleModelCheckpoint(
         # monitor="loss",
@@ -154,6 +159,9 @@ if __name__ == '__main__':
 
     pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
                                 load_in_8bit=global_args["load_in_8bit"],device_map={"": trainer.fabric.local_rank} if trainer.world_size > 1 else "auto")
+
+    #加载权重继续训练
+    #pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
 
     # pl_model.bfloat16()
     pl_model.float()

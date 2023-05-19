@@ -88,7 +88,7 @@ if __name__ == '__main__':
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
     precision = '32'  # 半精度训练 "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
-    if 'v2' in  model_args.model_name_or_path.lower():
+    if 'v2' in model_args.model_name_or_path.lower():
         precision = '16'
 
     trainer = Trainer(
@@ -131,6 +131,10 @@ if __name__ == '__main__':
 
     pl_model = MyRewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
                                    load_in_8bit=global_args["load_in_8bit"],device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto")
+
+    # 加载权重继续训练
+    # pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
+
     # pl_model.bfloat16()
     pl_model.float()
 
