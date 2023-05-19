@@ -8,11 +8,6 @@ import torch
 from tqdm import tqdm
 from transformers import PreTrainedTokenizer
 
-DEFAULT_PAD_TOKEN = "[PAD]"
-DEFAULT_EOS_TOKEN = "</s>"
-DEFAULT_BOS_TOKEN = "</s>"
-DEFAULT_UNK_TOKEN = "</s>"
-
 class CorpusPreprocess:
     # {
     #     "prompt": "\n\nHuman: I eat too much fast food. What's a way to start cooking at home more?\n\nAssistant: The easiest way to start cooking more at home is to cook a few meals a week and keep those meals varied. Planning meals and having a list ready will make cooking much easier. Shopping once a week will also keep your meals varied. Try cooking a few recipes you've never made before. Maybe you could try some Italian, Mexican, or Asian dishes. Cooking more at home is also a great way to save money. You can buy ingredients in bulk and cook large portions, which will last you several days.\n\nHuman: Tell me about buying in bulk. Will that make the process easier?\n\nAssistant: Buying in bulk will definitely make cooking and planning meals easier. The key to buying in bulk is to only buy what you know you will use. Keeping a well-stocked pantry with a variety of dried and canned goods will make cooking easier. Buying in bulk will save you money and give you greater variety in your meals.\n\nHuman: How does one buy in bulk?\n\nAssistant:",
@@ -40,28 +35,6 @@ class CorpusPreprocess:
 
 class TokenIds:
 
-    # @classmethod
-    # def get_prompt(cls,prompt,tokenizer: PreTrainedTokenizer,max_seq_length: int):
-    #     """
-    #     Get the prompt after T5 decoding to make sure dictionary
-    #     of prompts and summaries is consistent decode prompt from trlX pipeline
-    #     """
-    #     assert max_seq_length > 5
-    #     tmp = tokenizer.decode(
-    #         tokenizer(
-    #             prompt.split("TL;DR:")[0],
-    #             truncation=True,
-    #             max_length=max_seq_length - 5,  # to make sure "TL;DR" dont get truncated
-    #             add_special_tokens=False,
-    #         )["input_ids"],
-    #         skip_special_tokens=True,
-    #     ).strip()
-    #     tmp = tmp + "\nTL;DR:"
-    #     formatted_prompt = tokenizer.decode(
-    #         tokenizer(tmp, truncation=True, max_length=max_seq_length, add_special_tokens=False)["input_ids"],
-    #         skip_special_tokens=True,
-    #     ).strip()
-    #     return formatted_prompt
 
     @classmethod
     def process(cls,pair_data,tokenizer: PreTrainedTokenizer,max_seq_length: int,max_new_tokens: int):

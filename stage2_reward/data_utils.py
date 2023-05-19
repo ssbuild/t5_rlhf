@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2023/4/20 17:08
-
+# @Time    : 2023/4/19 23:02
+# @Author  : tk
+# @FileName: data_utils
 import sys
 sys.path.append('..')
 
@@ -12,13 +12,12 @@ import typing
 import numpy as np
 import torch
 from deep_training.data_helper import DataHelper, ModelArguments, TrainingArguments, DataArguments
+from models import LoraArguments,LoraConfig
 from fastdatasets.record import load_dataset as Loader, RECORD, WriterObject, gfile
 from transformers import PreTrainedTokenizer, HfArgumentParser
-from data_processer import DEFAULT_EOS_TOKEN, DEFAULT_BOS_TOKEN, DEFAULT_UNK_TOKEN, CorpusPreprocess, TokenIds
-from models import LoraArguments,LoraConfig,PPOArguments,PPOConfig
-from config.rlhf_config import *
-
-
+from data_processer import CorpusPreprocess, TokenIds
+from config.reward_config import *
+from torch.nn import functional as F
 
 def preprocess(text):
   return text
@@ -51,72 +50,56 @@ class NN_DataHelper(DataHelper):
         tokenizer: PreTrainedTokenizer
         config = self.config
         max_seq_length = self.max_seq_length_dict[mode]
-
-        ppo_args:PPOConfig = self.external_kwargs['ppo_args']
-        max_new_tokens = ppo_args.gen_kwargs['max_new_tokens']
         tokenizer = self.tokenizer
 
         pair_data = data
-        d = TokenIds.process(pair_data,tokenizer,max_seq_length,max_new_tokens)
+        d = TokenIds.process(pair_data,tokenizer,config,max_seq_length)
         if self.index < 3:
             print(d)
         return d
 
     # 读取文件
     def on_get_corpus(self, files: typing.List, mode: str):
+        tokenizer = self.tokenizer
         D = []
         for file in files:
             with open(file, mode='r', encoding='utf-8', newline='\n') as f:
                 lines = f.readlines()
-            d = CorpusPreprocess.process(lines)
+            d = CorpusPreprocess.process(tokenizer,lines)
             D.extend(d)
         return D
 
     def collate_fn(self, batch):
-        merge_keys = ['input_ids','attention_mask']
-        batch = copy.copy(batch)
-        o = {
-            k: []
-            for k in batch[0].keys()
-        }
+        o = {k: [] for k in batch[0].keys()}
         for i, b in enumerate(batch):
             for k in b:
-                o[k].append(copy.deepcopy(b[k]))
+                o[k].append(torch.tensor(b[k]))
+        seqlen = np.max([len(_) for _ in o['input_ids']])
+        flag = False
+        if 'input_ids2' in o:
+            flag = True
+            seqlen = np.max([seqlen] + [len(_) for _ in o['input_ids2']])
 
-        o_pad = {
-            k: o[k] for k in merge_keys
-        }
         tokenizer: PreTrainedTokenizer = self.tokenizer
-        o_pad = tokenizer.pad(o_pad,
-                              # max_length=self.data_args.train_max_seq_length,
-                              return_tensors="pt")
-        for k in o_pad:
-            o[k] = o_pad[k]
+        pad_val = tokenizer.pad_token_id
+
+        for k, v in o.items():
+            p_val = pad_val if 'input_ids' in k else 0
+            o[k] = [F.pad(_, (0, seqlen - len(_)), mode='constant', value=p_val) for _ in v]
+            o[k] = torch.stack(o[k])
         return o
 
 
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments,PPOArguments))
-    model_args, training_args, data_args, lora_args,ppo_args = parser.parse_dict(train_info_args)
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
-    ppo_args = ppo_args.config
 
-    dataHelper = NN_DataHelper(model_args, training_args, data_args,ppo_args=ppo_args)
-    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs={"torch_dtype": "float16"})
+    dataHelper = NN_DataHelper(model_args, training_args, data_args)
+    tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
     
-
-
-    if "llama" in model_args.model_name_or_path.lower() and tokenizer.bos_token_id != DEFAULT_BOS_TOKEN:
-        tokenizer.add_special_tokens({
-            "eos_token": DEFAULT_EOS_TOKEN,
-            "bos_token": DEFAULT_BOS_TOKEN,
-            "unk_token": DEFAULT_UNK_TOKEN,
-        })
-        if tokenizer.pad_token_id is None or tokenizer.pad_token_id == -1:
-            tokenizer.pad_token_id = tokenizer.eos_token_id
-
 
     # 缓存数据集
     # 检测是否存在 output/dataset_0-train.record ，不存在则制作数据集

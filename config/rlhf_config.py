@@ -3,8 +3,13 @@
 # @Author  : tk
 # @FileName: rlhf_config
 import json
+import os
 
 # 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
+global_args = {
+    "load_in_8bit": False, # lora 如果显卡支持int8 可以开启 ， 需安装依赖 pip install bitsandbytes
+    "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
+}
 
 
 lora_info_args = {
@@ -84,12 +89,12 @@ train_info_args = {
     # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
     # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
     # 'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1/config.json',
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    # 'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2/config.json',
-    'model_name_or_path': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    'tokenizer_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    'config_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5/config.json',
+    'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
+    'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
+    'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2/config.json',
+    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
+    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
+    # 'config_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5/config.json',
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,

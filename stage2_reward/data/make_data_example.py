@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Time    : 2023/4/20 9:10
 
-
 from datasets import load_dataset
 import json
 
@@ -46,4 +45,4 @@ def make_json_data3():
             f.write(json.dumps(d, ensure_ascii=False) + '\n')
 
 if __name__ == '__main__':
-    make_json_data3()
+    make_json_data2()
