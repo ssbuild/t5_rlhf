@@ -67,10 +67,7 @@ if __name__ == '__main__':
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
-    # 默认32精度 ，chatyuan v2 16 精度， 可以自行尝试
-    precision = '32'  # 半精度训练 "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
-    if 'v2' in model_args.model_name_or_path.lower():
-        precision = '16'
+
         
     trainer = PPOTrainer(
         callbacks=[ checkpoint_callback],
@@ -81,7 +78,8 @@ if __name__ == '__main__':
         checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         strategy=strategy,
-        precision=precision,#半精度
+        # lora int8 precision='32'
+        precision='32' if global_args['load_in_8bit'] else '16',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
 
