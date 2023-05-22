@@ -67,8 +67,9 @@ if __name__ == '__main__':
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
+    # 默认32精度 ，chatyuan v2 16 精度， 可以自行尝试
     precision = '32'  # 半精度训练 "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
-    if 'v2' in  model_args.model_name_or_path.lower():
+    if 'v2' in model_args.model_name_or_path.lower():
         precision = '16'
         
     trainer = PPOTrainer(
@@ -163,9 +164,8 @@ if __name__ == '__main__':
     #加载权重继续训练
     #pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
 
-    # pl_model.bfloat16()
     pl_model.float()
-    # pl_model.half()
+
 
     # pl_ref_model = load_ref_model('../stage2_reward/best_ckpt')
     pl_ref_model = copy.deepcopy(pl_model)
