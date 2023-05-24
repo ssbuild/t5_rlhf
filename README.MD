@@ -1,6 +1,6 @@
 
 ## 安装
-    pip install -U deep_training>=0.1.7
+    pip install -U deep_training==0.1.8
     python >= 3.10
 
 

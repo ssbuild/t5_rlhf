@@ -140,13 +140,12 @@ class MyAutoModelForSeq2SeqLMWithValueHead(AutoModelForSeq2SeqLMWithValueHead):
             kwargs.pop("device_map", None)
         super(MyAutoModelForSeq2SeqLMWithValueHead, self).__init__(*args,up_sampling_score=up_sampling_score, **kwargs)
 
-        if load_in_8bit:
-            setattr(self.model, 'model_parallel', True)
-            setattr(self.model, 'is_parallelizable', True)
-            self.model.enable_input_require_grads()
 
+    def enable_input_require_grads(self):
 
-
+        # setattr(self.model, 'model_parallel', True)
+        # setattr(self.model, 'is_parallelizable', True)
+        self.model.enable_input_require_grads()
 
 
 

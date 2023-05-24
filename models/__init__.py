@@ -37,8 +37,7 @@ class SftWeightMinMax:
         assert os.path.exists(sft_weight_path)
         if self.lora_args is not None and self.lora_args.with_lora:
             # 加载lora权重
-            self.backbone.from_pretrained(self.backbone.model, pretrained_model_name_or_path=sft_weight_path,
-                                          is_trainable=is_trainable)
+            self.backbone.load_weight(pretrained_model_name_or_path=sft_weight_path,is_trainable=is_trainable)
         else:
             weight_dict = torch.load(sft_weight_path)
             weights_dict_new = OrderedDict()
@@ -83,8 +82,9 @@ class MyRewardTransformer(MyRewardModel,SftWeightMinMax, with_pl=True):
         self.lora_args = lora_args
         self.prompt_args = prompt_args
         if lora_args is not None and lora_args.with_lora:
+            self.backbone.enable_input_require_grads()
             model = LoraModel(self.backbone, lora_args)
-            print('*' * 30, 'lora info')
+            print('==' * 30, 'lora info')
             model.print_trainable_parameters()
             self.set_model(model, copy_attr=False)
 
