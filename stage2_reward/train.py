@@ -15,7 +15,7 @@ from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from models import MyRewardTransformer
+from models import RewardTransformer
 
 
 class MySimpleModelCheckpoint(SimpleModelCheckpoint):
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
 
 
-    pl_model = MyRewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
+    pl_model = RewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
                                    quantization_config=global_args["quantization_config"],
                                    load_in_8bit=global_args["load_in_8bit"],
                                    device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",

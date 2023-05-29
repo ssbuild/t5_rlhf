@@ -6,11 +6,11 @@ sys.path.append('..')
 import os
 import numpy as np
 import torch
-from deep_training.data_helper import ModelArguments, TrainingArguments, DataArguments
+from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper,global_args
-from models import MyRewardTransformer,LoraArguments
+from models import RewardTransformer,LoraArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None
@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     assert lora_args.inference_mode == True
 
-    pl_model = MyRewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
+    pl_model = RewardTransformer(config=config, model_args=model_args, lora_args=lora_args,
                                    # load_in_8bit=global_args["load_in_8bit"],
                                    # # device_map="auto",
                                    # device_map = {"":0} # 第一块卡

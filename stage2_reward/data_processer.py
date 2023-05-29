@@ -27,7 +27,6 @@ class CorpusPreprocess:
             if chosen == rejected:
                 continue
             D.append((prompt, chosen,rejected))
-        print('*' * 30,len(D))
         return D
 
 class TokenIds:
