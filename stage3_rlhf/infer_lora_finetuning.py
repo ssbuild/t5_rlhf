@@ -21,7 +21,7 @@ if __name__ == '__main__':
     dataHelper = NN_DataHelper(model_args, None, data_args)
     tokenizer, _, _, _ = dataHelper.load_tokenizer_and_config()
 
-    ckpt_dir = './best_ckpt'
+    ckpt_dir = './best_ckpt/last'
     config = AutoConfig.from_pretrained(ckpt_dir)
     lora_args = LoraArguments.from_pretrained(ckpt_dir)
 
@@ -35,10 +35,7 @@ if __name__ == '__main__':
     # 加载lora权重
     pl_model.load_sft_weight(ckpt_dir)
 
-    if getattr(pl_model.get_llm_model(), "is_loaded_in_8bit", False):
-        pl_model.eval().cuda()
-    else:
-        pl_model.eval().half().cuda()
+    pl_model.eval().half().cuda()
 
     enable_merge_weight = False
 

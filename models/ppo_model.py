@@ -5,8 +5,9 @@ import torch
 from deep_training.nlp.models.rl.modeling_ppo import AutoModelForSeq2SeqLMWithValueHead
 from deep_training.nlp.rl.ppo.configuration import PPOConfig,PPOArguments
 from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
+from deep_training.trainer.pl.modelweighter import *
 from transformers import AdamW
-from models.model_weight import *
+
 
 class MyModelForSeq2SeqLMWithValueHead(AutoModelForSeq2SeqLMWithValueHead):
     def __init__(self, *args,up_sampling_score=False,**kwargs):

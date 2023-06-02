@@ -3,9 +3,8 @@
 # @Time    : 2023/5/29 15:32
 import torch
 from torch import nn
-
-from models.model_weight import *
 from deep_training.nlp.models.transformer import TransformerForSeq2SeqLM
+from deep_training.trainer.pl.modelweighter import *
 
 __all__ = [
     'RewardT5Model',

@@ -4,11 +4,11 @@
 # @FileName: rlhf_config
 import json
 import os
-
 import torch
 from transformers import BitsAndBytesConfig
+from config.constant_map import train_info_models
+train_model_config = train_info_models['ChatYuan-large-v2']
 
-# 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
 global_args = {
     "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
     "load_in_4bit": False,
@@ -17,9 +17,6 @@ global_args = {
     "quantization_config": None,
     "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
 }
-
-if global_args['load_in_4bit'] != True:
-    global_args['quantization_config'] = None
 
 
 ppp_info_args = {
@@ -57,26 +54,27 @@ ppp_info_args = {
 train_info_args = {
     'devices': 1,
     'data_backend': 'record',
-    'model_type': 'bloom',
-    # 预训练模型路径 , 从0训练，则置空
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
-    # 'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1/config.json',
-    'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2/config.json',
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    # 'config_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5/config.json',
+    # 预训练模型路径
+    **train_model_config,
 
     'convert_onnx': False, # 转换onnx模型
     'do_train': True,
     'train_file':  [ './data/train.json'],
     'max_epochs': 20,
     'max_steps': -1,
-    'optimizer': 'lion', # one of [lamb,adamw_hf,adamw,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion_8bit,lion_32bit,paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit]
 
-    'scheduler_type': 'CAWR', #one of [linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau, cosine,cosine_with_restarts,polynomial,constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau]
+    # *** optimizer
+    # lamb,adamw_hf,adamw,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,
+    # adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion,lion_8bit,lion_32bit,
+    # paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit,
+    # lamb_fused_dp adagrad_cpu_dp adam_cpu_dp adam_fused_dp
+
+    # *** scheduler
+    # linear,WarmupCosine,CAWR,CAL,Step,ReduceLROnPlateau, cosine,cosine_with_restarts,polynomial,
+    # constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau
+
+    'optimizer': 'lion',
+    'scheduler_type': 'CAWR',
     'scheduler':{'T_mult': 1,
              'rewarm_epoch_num': 0.5,  # 如果 max_epochs is not None !
              # 'T_0': 50000,    # 如果 max_epochs is None , 设定步数
@@ -124,7 +122,3 @@ train_info_args = {
     "ppo": {**ppp_info_args},
 }
 
-
-
-if global_args['load_in_8bit'] == global_args['load_in_4bit'] and global_args['load_in_8bit'] == True:
-    raise Exception('load_in_8bit and load_in_4bit only set one at same time!')
