@@ -7,8 +7,9 @@ import os
 
 import torch
 from transformers import BitsAndBytesConfig
+from config.constant_map import train_info_models
 
-# 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
+train_model_config = train_info_models['ChatYuan-large-v2']
 
 global_args = {
     "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
@@ -19,26 +20,12 @@ global_args = {
     "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
 }
 
-if global_args['load_in_4bit'] != True:
-    global_args['quantization_config'] = None
-
 
 train_info_args = {
     'devices': 1,
     'data_backend': 'record',
-    'model_type': 'bloom',
-    # 预训练模型路径 , 从0训练，则置空
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1',
-    # 'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v1/config.json',
-
-    'model_name_or_path': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    'tokenizer_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2',
-    'config_name': '/data/nlp/pre_models/torch/t5/ChatYuan-large-v2/config.json',
-
-    # 'model_name_or_path': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    # 'tokenizer_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5',
-    # 'config_name': '/data/nlp/pre_models/torch/t5/PromptCLUE-base-v1-5/config.json',
+    # 预训练模型路径
+    **train_model_config,
 
 
     'convert_onnx': False, # 转换onnx模型

@@ -10,7 +10,7 @@ from models.t5_model import *
 def load_reward_model(sft_model_dir,sft_weight_path=None) ->RewardTransformer:
     '''
         sft_model_dir: 模型配置路径 ， 路径下需存在config.json
-        weight_path: 如果是lora 则是lora 权重路径 （）
+        weight_path: 如果是lora 则是lora 权重路径
                      如果是普通 或者 p-tuning-v2 则是权重文件
     '''
     from config import reward_config

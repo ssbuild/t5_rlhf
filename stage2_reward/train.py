@@ -7,38 +7,15 @@ sys.path.append('..')
 import logging
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, TrainingArguments
-from deep_training.nlp.models.lora.v2 import LoraArguments, LoraConfig
-from deep_training.utils.trainer import SimpleModelCheckpoint
+from deep_training.trainer.pl.modelcheckpoint import ModelCheckpointEx
 from lightning import Trainer
 from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from models import RewardTransformer
+from models import RewardTransformer,LoraArguments, LoraConfig
 
 
-class MySimpleModelCheckpoint(SimpleModelCheckpoint):
-    def __init__(self, *args, **kwargs):
-        super(MySimpleModelCheckpoint, self).__init__(*args, **kwargs)
-        lora_args:LoraConfig= self.external_kwargs['lora_args']
-        if lora_args is not None:
-            self.weight_file = './best_ckpt'
-            self.last_weight_file = './last_ckpt'
-
-
-    def on_save_model(
-            self, trainer: "pl.Trainer", pl_module: "pl.LightningModule"
-    ) -> None:
-
-        lora_args : LoraArguments =  self.external_kwargs['lora_args']
-        # 保存权重
-        if lora_args is None:
-            super(MySimpleModelCheckpoint, self).on_save_model(trainer, pl_module)
-        else:
-            # 保存最新权重
-            logging.info('step {} saving model'.format(trainer.global_step))
-            # 保存最新权重
-            pl_module.backbone.save_pretrained(self.weight_file)
 
 
 if __name__ == '__main__':
@@ -46,13 +23,15 @@ if __name__ == '__main__':
     model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
 
+    output_weight_dir = './best_ckpt'
+
     dataHelper = NN_DataHelper(model_args, training_args, data_args)
     config_kwargs = {"torch_dtype": torch.float16}
     if global_args["num_layers"] > 0:
         config_kwargs["num_layers"] = global_args["num_layers"]
         config_kwargs["num_decoder_layers"] = global_args["num_layers"]
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
-    config.save_pretrained('best_ckpt')
+
 
     # 缓存数据集
     if data_args.do_train:
@@ -63,28 +42,22 @@ if __name__ == '__main__':
         dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
 
 
+
     deepspeed_config = get_deepspeed_config()
-    # 保存最小loss模型
-    if lora_args is not None:
-        assert deepspeed_config is None, ValueError('lora mode does not support deepspeed')
-        checkpoint_callback = MySimpleModelCheckpoint(
-            # monitor="loss",
-            save_weights_only=True,
-            every_n_epochs=1,
-            every_n_train_steps=2000 // training_args.gradient_accumulation_steps,
-            # 模型参数
-            model_args=model_args,
-            training_args=training_args,
-            lora_args=lora_args, )
-    else:
-        checkpoint_callback = ModelCheckpoint(
-            # monitor='loss',
-            './best_ckpt',
-            save_weights_only=True,
-            save_last=True,
-            save_top_k=1,
-            # every_n_train_steps=1000,
-            every_n_epochs=1)
+    strategy = 'ddp' if torch.cuda.device_count() > 1 else 'auto'
+    if deepspeed_config is not None and len(deepspeed_config):
+        strategy = DeepSpeedStrategy(config=deepspeed_config, )
+
+    checkpoint_callback = ModelCheckpointEx(
+        # monitor='loss',
+        dirpath=output_weight_dir,
+        save_weights_only=True,
+        save_last=True,
+        save_top_k=1,
+        # every_n_train_steps=2000 // training_args.gradient_accumulation_steps,
+        every_n_epochs=1,
+        lora_args=lora_args,
+    )
 
     strategy = 'ddp' if torch.cuda.device_count() > 1 else 'auto'
     if deepspeed_config is not None and len(deepspeed_config):
@@ -107,17 +80,15 @@ if __name__ == '__main__':
     )
 
 
-    # 额外参数
-    checkpoint_callback.tokenizer = tokenizer
-    checkpoint_callback.data_args = data_args
-
-
-
     pl_model = RewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
-                                   quantization_config=global_args["quantization_config"],
-                                   load_in_8bit=global_args["load_in_8bit"],
-                                   device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                                   torch_dtype=torch.float16, )
+                                 quantization_config=global_args["quantization_config"],
+                                 load_in_8bit=global_args["load_in_8bit"],
+                                 device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
+                                 torch_dtype=torch.float16,
+                                 new_num_tokens=len(tokenizer),  # 可能扩充词
+                                 )
+
+    config.save_pretrained(output_weight_dir)
 
     # 加载权重继续训练
     # pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)

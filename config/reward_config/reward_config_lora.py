@@ -8,7 +8,9 @@ import os
 import torch
 from transformers import BitsAndBytesConfig
 
-# 默认禁用lora 相关模块 , lora 和 adalora 只能同时启用一个
+from config.constant_map import train_info_models, train_target_modules_maps
+
+train_model_config = train_info_models['ChatYuan-large-v2']
 
 global_args = {
     "load_in_8bit": False, # lora 如果显卡支持int8 可以开启
@@ -26,14 +28,13 @@ global_args = {
     "num_layers": -1, # 是否使用骨干网络的全部层数 ， -1 表示全层, 否则只用只用N层
 }
 
-if global_args['load_in_4bit'] != True:
-    global_args['quantization_config'] = None
+
 
 lora_info_args = {
     'with_lora': True,  # 是否启用lora模块
     'lora_type': 'lora',
     'r': 8,
-    'target_modules': ['q', 'v'],
+    'target_modules': train_target_modules_maps[train_model_config['model_type']],
     'lora_alpha': 32,
     'lora_dropout': 0.1,
     'fan_in_fan_out': False,
@@ -45,7 +46,7 @@ adalora_info_args = {
     'with_lora': False,  # 是否启用adalora模块
     'lora_type': 'adalora',
     'r': 8,
-    'target_modules': ['q', 'v'],
+    'target_modules': train_target_modules_maps[train_model_config['model_type']],
     'lora_alpha': 32,
     'lora_dropout': 0.1,
     'fan_in_fan_out': False,
@@ -140,11 +141,3 @@ train_info_args = {
 
 }
 
-
-
-if global_args['load_in_8bit'] == global_args['load_in_4bit'] and global_args['load_in_8bit'] == True:
-    raise Exception('load_in_8bit and load_in_4bit only set one at same time!')
-
-
-if lora_info_args['with_lora'] == adalora_info_args['with_lora'] and lora_info_args['with_lora'] == True:
-    raise Exception('lora and adalora can set one at same time !')
