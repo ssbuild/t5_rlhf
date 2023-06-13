@@ -7,7 +7,8 @@ from deep_training.nlp.rl.ppo.configuration import PPOConfig,PPOArguments
 from deep_training.nlp.rl.ppo.ppo_module import PPOModelLoss
 from deep_training.trainer.pl.modelweighter import *
 from transformers import AdamW
-
+import logging
+logger = logging.getLogger(__name__)
 
 class MyModelForSeq2SeqLMWithValueHead(AutoModelForSeq2SeqLMWithValueHead):
     def __init__(self, *args,up_sampling_score=False,**kwargs):
@@ -33,13 +34,16 @@ class MyModelForSeq2SeqLMWithValueHead(AutoModelForSeq2SeqLMWithValueHead):
 
 
 class MyPPOTransformer(MyModelForSeq2SeqLMWithValueHead,PPOModelLoss,ModelWeightMinMax, with_pl=True):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args,new_num_tokens=None, **kwargs):
         lora_args: LoraConfig = kwargs.pop('lora_args', None)
         ppo_args: PPOConfig = kwargs.pop('ppo_args', None)
         super(MyPPOTransformer, self).__init__(*args, **kwargs)
 
         self.lora_args = lora_args
         self.ppo_config = ppo_args
+
+        self.resize_token_embs(new_num_tokens)
+
         if lora_args is not None and lora_args.with_lora:
             self.backbone.enable_input_require_grads()
             model: LoraModel = LoraModel(self.backbone, lora_args, auto_prepare_kbit_training=False)
@@ -55,6 +59,17 @@ class MyPPOTransformer(MyModelForSeq2SeqLMWithValueHead,PPOModelLoss,ModelWeight
             #         if hasattr(module, 'weight'):
             #             if module.weight.dtype == torch.float32:
             #                 module = module.to(torch.bfloat16)
+
+    def resize_token_embs(self, new_num_tokens):
+        if new_num_tokens is not None:
+            logger.info(f"new_num_tokens:{new_num_tokens}")
+            model: PreTrainedModel = self.backbone.model
+            embedding_size = model.get_input_embeddings().weight.shape[0]
+            if new_num_tokens != embedding_size:
+                logger.info("resize the embedding size by the size of the tokenizer")
+                # print('before',self.config)
+                model.resize_token_embeddings(new_num_tokens)
+                # print('after',self.config)
 
     def get_model_lr(self, model=None, lr=None):
         # for n, p in self.named_parameters():

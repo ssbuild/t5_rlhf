@@ -2,16 +2,15 @@
 - [deep_training](https://github.com/ssbuild/deep_training)
 
 ```text
+    06-13 support resize_token_embeddings
+    06-01 support deepspeed training for lora adalora prompt,0.1.9 和 0.1.10合并
     05-27 add qlora transformers>=4.30
 ```
 ## install
     python >= 3.10
 - pip install -i https://pypi.org/simple -U -r requirements.txt
 
-```text
-dev 
-pip install -U -i https://pypi.org/simple --pre deep_training==0.1.10
-```
+
     
 
 
@@ -54,17 +53,21 @@ pip install -U -i https://pypi.org/simple --pre deep_training==0.1.10
     python train.py
 ```
 
+## 训练参数
+[训练参数](args.MD)
 
 ## 友情链接
 
 - [pytorch-task-example](https://github.com/ssbuild/pytorch-task-example)
 - [tf-task-example](https://github.com/ssbuild/tf-task-example)
+- [chatmoss_finetuning](https://github.com/ssbuild/chatmoss_finetuning)
 - [chatglm_finetuning](https://github.com/ssbuild/chatglm_finetuning)
 - [chatyuan_finetuning](https://github.com/ssbuild/chatyuan_finetuning)
 - [llm_finetuning](https://github.com/ssbuild/llm_finetuning)
 - [rlhf_llm](https://github.com/ssbuild/rlhf_llm)
 - [rlhf_chatglm](https://github.com/ssbuild/rlhf_chatglm)
 - [rlhf_chatyuan](https://github.com/ssbuild/rlhf_chatyuan)
+- [rwkv_finetuning](https://github.com/ssbuild/rwkv_finetuning)
 
 ## 
     纯粹而干净的代码

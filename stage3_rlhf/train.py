@@ -32,7 +32,6 @@ if __name__ == '__main__':
             config_kwargs["num_layers"] = global_args["num_layers"]
             config_kwargs["num_decoder_layers"] = global_args["num_layers"]
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
-    config.save_pretrained('best_ckpt')
 
     # 缓存数据集
     if data_args.do_train:
@@ -132,7 +131,11 @@ if __name__ == '__main__':
                                 quantization_config=global_args["quantization_config"],
                                 load_in_8bit=global_args["load_in_8bit"],
                                 device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                                torch_dtype=torch.float16, )
+                                torch_dtype=torch.float16,
+                                new_num_tokens=len(tokenizer),  # 可能扩充词
+                                )
+
+    config.save_pretrained(output_weight_dir)
 
     #加载权重继续训练
     #pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
