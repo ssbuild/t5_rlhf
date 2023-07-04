@@ -13,7 +13,7 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from models import RewardTransformer,LoraArguments, LoraConfig
+from aigc_zoo.model_zoo.t5.reward_model import RewardTransformer,LoraArguments, LoraConfig
 
 
 
@@ -32,14 +32,7 @@ if __name__ == '__main__':
         config_kwargs["num_decoder_layers"] = global_args["num_layers"]
     tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_kwargs=config_kwargs)
 
-
-    # 缓存数据集
-    if data_args.do_train:
-        dataHelper.make_dataset_with_args(data_args.train_file, mixed_data=False, shuffle=True, mode='train')
-    if data_args.do_eval:
-        dataHelper.make_dataset_with_args(data_args.eval_file, mode='eval')
-    if data_args.do_test:
-        dataHelper.make_dataset_with_args(data_args.test_file, mode='test')
+    dataHelper.make_dataset_all()
 
 
 
