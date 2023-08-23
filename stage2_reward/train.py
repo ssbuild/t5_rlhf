@@ -84,7 +84,7 @@ if __name__ == '__main__':
 
     pl_model = RewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
                                  quantization_config=global_args["quantization_config"],
-                                 load_in_8bit=global_args["load_in_8bit"],
+                                 
                                  device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
                                  torch_dtype=torch.float16,
                                  new_num_tokens=len(tokenizer),  # 可能扩充词
