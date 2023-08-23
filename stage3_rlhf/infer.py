@@ -10,7 +10,8 @@ from deep_training.data_helper import ModelArguments, TrainingArguments, DataArg
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper,global_args
-from models import MyPPOTransformer, Generate,LoraArguments,PPOArguments
+from aigc_zoo.model_zoo.t5.ppo_model import MyPPOTransformer,LoraArguments,PPOArguments
+from aigc_zoo.utils.llm_generate import Generate
 
 
 if __name__ == '__main__':

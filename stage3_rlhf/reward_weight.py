@@ -2,9 +2,9 @@
 # @Time:  11:30
 # @Author: tk
 
-from models.ppo_model import *
-from models.reward_model import *
-from models.t5_model import *
+from aigc_zoo.model_zoo.t5.ppo_model import *
+from aigc_zoo.model_zoo.t5.reward_model import *
+from aigc_zoo.model_zoo.t5.llm_model import *
 
 
 def load_reward_model(sft_model_dir,sft_weight_path=None) ->RewardTransformer:

@@ -10,7 +10,7 @@ from deep_training.data_helper import ModelArguments, DataArguments
 from transformers import HfArgumentParser,AutoConfig,PreTrainedTokenizer
 
 from data_utils import train_info_args, NN_DataHelper,global_args
-from models import RewardTransformer,LoraArguments
+from aigc_zoo.model_zoo.t5.reward_model import RewardTransformer,LoraArguments
 
 if __name__ == '__main__':
     train_info_args['seed'] = None

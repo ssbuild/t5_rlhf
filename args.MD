@@ -5,8 +5,7 @@
     enable_deepspeed = False
     enable_ptv2 = False
     enable_lora = True
-    enable_int8 = False # qlora int8
-    enable_int4 = False # qlora int4
+    load_in_bit = 0  # 4 load_in_4bit, 8 load_in_8bit  other  0
 
 ### 单机多卡
 ```text
