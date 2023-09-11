@@ -13,13 +13,13 @@ from lightning.pytorch.callbacks import ModelCheckpoint, LearningRateMonitor
 from lightning.pytorch.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
-from aigc_zoo.model_zoo.t5.reward_model import RewardTransformer,LoraArguments, LoraConfig
+from aigc_zoo.model_zoo.t5.reward_model import RewardTransformer,PetlArguments, LoraConfig
 
 
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
 
@@ -56,6 +56,15 @@ if __name__ == '__main__':
     if deepspeed_config is not None and len(deepspeed_config):
         strategy = DeepSpeedStrategy(config=deepspeed_config, )
 
+    is_bf16_supported = torch.cuda.is_bf16_supported()
+    # 精度 根据实际情况做调整
+    if is_bf16_supported:
+        precision = 'bf16'
+    else:
+        precision = '16'
+
+    if global_args["quantization_config"] is not None and global_args["quantization_config"].load_in_8bit:
+        precision = "32"
 
     trainer = Trainer(
         callbacks=[checkpoint_callback, LearningRateMonitor(logging_interval='step')],
@@ -69,24 +78,27 @@ if __name__ == '__main__':
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         num_sanity_val_steps=0,
         strategy=strategy,
-        precision='16',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+        precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
-
-    pl_model = RewardTransformer(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
+    transformer_args = dict(config=config, model_args=model_args, training_args=training_args, lora_args=lora_args,
                                  quantization_config=global_args["quantization_config"],
-                                 load_in_8bit=global_args["load_in_8bit"],
+
                                  device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
                                  torch_dtype=torch.float16,
                                  new_num_tokens=len(tokenizer),  # 可能扩充词
                                  )
+    if transformer_args["quantization_config"] is None:
+        transformer_args.pop("device_map")
+
+    pl_model = RewardTransformer(**transformer_args)
 
     config.save_pretrained(output_weight_dir)
 
     # 加载权重继续训练
     # pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
 
-    pl_model.float()
+    pl_model = pl_model.float() if not is_bf16_supported else pl_model.bfloat16()
 
 
     train_datasets = dataHelper.load_distributed_random_sampler(

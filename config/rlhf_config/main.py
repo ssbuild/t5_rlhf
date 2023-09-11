@@ -11,8 +11,7 @@ import os
 enable_deepspeed = False
 enable_ptv2 = False
 enable_lora = True
-enable_int8 = False # qlora int8
-enable_int4 = False # qlora int4
+load_in_bit = 0  # 4 load_in_4bit, 8 load_in_8bit  other  0
 
 
 if enable_lora:
@@ -20,20 +19,12 @@ if enable_lora:
 else:
     from config.rlhf_config.rlhf_config import *
 
-
+if global_args['quantization_config'] is not None:
+    global_args['quantization_config'].load_in_4bit = load_in_bit == 4
+    global_args['quantization_config'].load_in_8bit = load_in_bit == 8
 
 if enable_lora:
     enable_ptv2 = False
-    if enable_int4:
-        global_args['load_in_4bit'] = True
-        global_args['load_in_8bit'] = False
-
-    if enable_int8:
-        global_args['load_in_4bit'] = False
-        global_args['load_in_8bit'] = True
-
-    if not enable_int4:
-        global_args['quantization_config'] = None
 
     #检查lora adalora是否开启
     if 'lora' not in train_info_args and 'adalora' not in train_info_args:
@@ -44,13 +35,9 @@ if enable_lora:
     train_info_args.pop('prompt', None)
 elif enable_ptv2:
     enable_lora = False
-    global_args['load_in_4bit'] = False
-    global_args['load_in_8bit'] = False
     train_info_args.pop('lora', None)
     train_info_args.pop('adalora', None)
 else:
-    # global_args['load_in_4bit'] = False
-    # global_args['load_in_8bit'] = False
     train_info_args.pop('lora',None)
     train_info_args.pop('adalora', None)
     train_info_args.pop('prompt', None)
@@ -88,5 +75,8 @@ def get_deepspeed_config():
             optimizer['params']['betas'] = train_info_args.get('optimizer_betas', (0.9, 0.999))
             optimizer['params']['lr'] = train_info_args.get('learning_rate', 2e-5)
             optimizer['params']['eps'] = train_info_args.get('adam_epsilon', 1e-8)
+
+            # deepspeed_offload 优化器有效
+            train_info_args['optimizer'] = optimizer['type']
     return deepspeed_config
 

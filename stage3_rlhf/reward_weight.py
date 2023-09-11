@@ -15,12 +15,12 @@ def load_reward_model(sft_model_dir,sft_weight_path=None) ->RewardTransformer:
     '''
     from config import reward_config
 
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(reward_config.train_info_args)
     lora_args = lora_args.config
     config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = LoraArguments.from_pretrained(sft_model_dir) if lora_args else None
+    lora_args = PetlArguments.from_pretrained(sft_model_dir) if lora_args else None
     pl_module = RewardTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
 
     # 加载lora sft 或者 sft 或者 p-tuning-v2 权重
@@ -39,12 +39,12 @@ def load_ref_model(ref_train_info_args,sft_model_dir,sft_weight_path=None) ->MyP
         weight_path: 如果是lora 则是lora 权重路径 （）
                      如果是普通 或者 p-tuning-v2 则是权重文件
     '''
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments))
     model_args, training_args, data_args, lora_args = parser.parse_dict(ref_train_info_args)
     lora_args = lora_args.config
     config = AutoConfig.from_pretrained(sft_model_dir)
     # 加载权重
-    lora_args = LoraArguments.from_pretrained(sft_model_dir) if lora_args else None
+    lora_args = PetlArguments.from_pretrained(sft_model_dir) if lora_args else None
     pl_module = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args)
 
     # 加载lora sft 或者 sft 或者 p-tuning-v2 权重

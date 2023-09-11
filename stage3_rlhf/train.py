@@ -13,13 +13,13 @@ from lightning.fabric.strategies import DeepSpeedStrategy
 from transformers import HfArgumentParser
 from data_utils import NN_DataHelper, train_info_args, get_deepspeed_config,global_args
 
-from aigc_zoo.model_zoo.t5.ppo_model import MyPPOTransformer,LoraArguments,LoraConfig,PPOArguments,PPOConfig
+from aigc_zoo.model_zoo.t5.ppo_model import MyPPOTransformer,PetlArguments,LoraConfig,PPOArguments,PPOConfig
 from reward_weight import load_reward_model, load_ref_model
 from deep_training.nlp.rl.ppo.ppo_trainer import PPOTrainer
 
 
 if __name__ == '__main__':
-    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, LoraArguments, PPOArguments))
+    parser = HfArgumentParser((ModelArguments, TrainingArguments, DataArguments, PetlArguments, PPOArguments))
     model_args, training_args, data_args, lora_args, ppo_args = parser.parse_dict(train_info_args)
     lora_args = lora_args.config
     ppo_args = ppo_args.config
@@ -53,8 +53,15 @@ if __name__ == '__main__':
         training_args=training_args,
         lora_args=lora_args, )
 
+    is_bf16_supported = torch.cuda.is_bf16_supported()
+    # 精度 根据实际情况做调整
+    if is_bf16_supported:
+        precision = 'bf16'
+    else:
+        precision = '16'
 
-        
+    if global_args["quantization_config"] is not None and global_args["quantization_config"].load_in_8bit:
+        precision = "32"
     trainer = PPOTrainer(
         callbacks=[ checkpoint_callback],
         max_epochs=training_args.max_epochs,
@@ -64,7 +71,7 @@ if __name__ == '__main__':
         checkpoint_dir=data_args.output_dir,
         accumulate_grad_batches=training_args.gradient_accumulation_steps,
         strategy=strategy,
-        precision='16',# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
+        precision=precision,# 可以自行尝试  "32": "32-true", "16": "16-mixed", "bf16": "bf16-mixed"
     )
 
 
@@ -121,21 +128,23 @@ if __name__ == '__main__':
     else:
         reward_fn = None
 
+    transformer_args = dict(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
+                            quantization_config=global_args["quantization_config"],
+                            device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
+                            torch_dtype=torch.float16,
+                            new_num_tokens=len(tokenizer),  # 可能扩充词
+                            )
+    if transformer_args["quantization_config"] is None:
+        transformer_args.pop("device_map")
 
-    pl_model = MyPPOTransformer(config=config,model_args=model_args,training_args=training_args,lora_args=lora_args,ppo_args=ppo_args,
-                                quantization_config=global_args["quantization_config"],
-                                load_in_8bit=global_args["load_in_8bit"],
-                                device_map={"": trainer.local_rank} if trainer.world_size > 1 else "auto",
-                                torch_dtype=torch.float16,
-                                new_num_tokens=len(tokenizer),  # 可能扩充词
-                                )
+    pl_model = MyPPOTransformer(**transformer_args)
 
     config.save_pretrained(output_weight_dir)
 
     #加载权重继续训练
     #pl_model.load_sft_weight('best_ckpt/best.pt',is_trainable=True)
 
-    pl_model.float()
+    pl_model = pl_model.float() if not is_bf16_supported else pl_model.bfloat16()
 
 
     # pl_ref_model = load_ref_model('../stage2_reward/best_ckpt')
